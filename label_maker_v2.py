@@ -32,24 +32,52 @@ class Data(object):
 		- SEt the offset_time
 
 		Output:
-			x_df,y_df: columns = [0,1,2,3,4,5,6,7,8,9,10,time,head_verified]
+			x_df,y_df: 
+			type 1: Peter's style columns = [0,1,2,3,4,5,6,7,8,9,10,time,head_verified]
 						each row is a snapshot of the video.
+			type 2: standard style
+					columns = ['time', 0, 1, 3, ... ,number_of_points]
+
+
 		"""
 		# select the xdata_name, generate ydata_name
+
 		xdata_name =  filedialog.askopenfilename(initialdir = "./",
 			title = "Select spine X",filetypes = (("csv files","*.csv"),("all files","*.*")))
 		ydata_name = xdata_name.replace('x.csv','y.csv')
 
 		x_df = pd.read_csv( xdata_name )
 		y_df = pd.read_csv( ydata_name )
+		x_df, y_df = x_df.dropna(), y_df.dropna()
 
-		x_df = x_df.drop( ['Unnamed: 0','frame','frame2'],  axis=1 )
-		y_df = y_df.drop( ['Unnamed: 0','frame','frame2'],  axis=1 )
+		try:
+			# handle the Peter-style output
+			print("handle input style from Peter...")
+			x_df = x_df.drop( ['Unnamed: 0','frame','frame2'],  axis=1 )
+			y_df = y_df.drop( ['Unnamed: 0','frame','frame2'],  axis=1 )
+		except:
+			print("Handle standard input style...")
+
+
+		# normalize the x,y spine 
+		scale = 100;
+		x_copy = x_df.loc[:, x_df.columns != 'time']
+		y_copy = y_df.loc[:, y_df.columns != 'time']
+
+		x_copy = x_copy.apply(lambda x: (x-x.mean())*scale, axis=1)
+		y_copy = y_copy.apply(lambda x: (x-x.mean())*scale, axis=1)
+
+		x_df = x_copy.join(x_df['time'])
+		y_df = y_copy.join(y_df['time'])
+
+
+
 
 		self.spine_x_df, self.spine_y_df = x_df, y_df
-		self.offset_time = x_df.iloc[0,11]
+		time_column_index = x_df.columns.get_loc('time')
+		self.offset_time = x_df.iloc[0,time_column_index]
 
-		video_length = x_df.iloc[-1,11] - self.offset_time
+		video_length = x_df.iloc[-1,time_column_index] - self.offset_time
 		self.video_length = video_length
 
 		# re-normalize the time
@@ -274,8 +302,9 @@ class Animate(Frame):
 		Input: 
 			start_step: the frame index to start 
 		"""
-		SIDX = range(11) #11-points spine index
-		
+		number_of_points = 50
+		#SIDX = range(number_of_points) #number_of_points spine index
+		SIDX = [self.data.spine_x_df.columns.get_loc(str(e)) for e in range(number_of_points)]
 		cidx = self.current_frame_index
 		
 		# vector of spines
@@ -283,14 +312,18 @@ class Animate(Frame):
 		Y = np.array( self.data.spine_y_df.iloc[ cidx, SIDX ] )
 		points = zip(X,Y)
 		
-		head_verified = self.data.spine_x_df.loc[ cidx, 'head_verified' ]
+		#head_verified = self.data.spine_x_df.loc[ cidx, 'head_verified' ]
 	
 		# plot the first frame
 		if cidx == start_step:
 			for i, pt in enumerate(points):
 				xc, yc, x1, x2, y1, y2 = self.create_coord( pt )
-				self.current_ovals[i] = self.canvas.create_oval(\
-					x1,y1,x2,y2,fill='green')
+				if i==0:
+					self.current_ovals[i] = self.canvas.create_oval(
+							x1,y1,x2,y2,fill='red')
+				else:
+					self.current_ovals[i] = self.canvas.create_oval(
+							x1,y1,x2,y2,fill='green')
 
 		# plot the folllowing frames using canvas.move
 		else:
@@ -340,11 +373,12 @@ class Animate(Frame):
 
 
 	@staticmethod
-	def create_coord(a_point,point_radius = 4, canvas_radius = 100):
+	def create_coord(a_point,point_radius = 3, canvas_radius = 100):
 		"""
 		Return the coords for center and four corners of a point 
 		in the spine.
 		"""
+
 		#center
 		xc = a_point[0]+canvas_radius
 		yc = a_point[1]+canvas_radius
@@ -354,6 +388,7 @@ class Animate(Frame):
 		# right corner
 		x2 = xc+point_radius
 		y2 = yc+point_radius
+
 		return xc, yc, x1, x2, y1, y2
 
 
