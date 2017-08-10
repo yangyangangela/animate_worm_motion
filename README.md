@@ -3,8 +3,8 @@ This is an animation software to visualize worm motion, label worm behavior, and
 
 How to run
 ------------
-- Install the required packages by typing "pip install -r requirement.txt" in command line.
-- In terminal: python label_motion_v2.py.
+- Install the required packages by typing "pip install -r requirements.txt" in command line.
+- In terminal: python label_maker_v2.py.
 
 
 What you can do in the software
