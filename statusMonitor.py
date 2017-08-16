@@ -33,7 +33,7 @@ class statusTop(Toplevel):
 	def __init__(self, parent=None,filename=None):
 
 		Toplevel.__init__(self, parent)
-		self.wm_geometry("550x500+800+0")
+		self.wm_geometry("700x500+800+0")
 
 		# Load data into status_list
 		self.filename = filename
@@ -82,7 +82,7 @@ class statusTop(Toplevel):
 class MainFrame(Frame):
 
 	def __init__(self, root=None):
-		Frame.__init__(self, root,width=400, height=500)
+		Frame.__init__(self, root,width=600, height=500)
 
 		self.grid_propagate(False)
 
@@ -114,7 +114,7 @@ class MainFrame(Frame):
 		self.state.grid(row=3,column=1,sticky="WE")
 
 		# option menue to update status
-		status_options=['Turn','Pause','Reverse','Undefined']	
+		status_options=['Left Turn','Right Turn','Omega Turn','Pause','Reversal','Bad Data', 'Head Misidentified',]	
 		Label(self, text="Update to: ").grid(row=3,column=2, sticky="W")
 		self.newStatusVar = StringVar()
 		self.newStatusVar.set( status_options[0] )
